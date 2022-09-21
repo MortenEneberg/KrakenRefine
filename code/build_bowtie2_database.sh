@@ -2,9 +2,9 @@
 
 module purge
 
-Outdir = $3
-Bowtie = $2
-genomes = $1
+Outdir=$3
+Bowtie=$2
+genomes=$1
 
 mkdir $Outdir
 
