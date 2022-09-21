@@ -1,4 +1,12 @@
-rule download_genomes:
+configfile: "./config.yaml"
+
+
+rule build_bowtie_database:
     input:
-        script: "code/build_kraken_database.sh"
-    output:
+        "code/build_database.sh"
+    output: "logfile.log"
+    threads: 4
+    shell: 
+       """ 
+       bash {input}
+       """
