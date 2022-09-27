@@ -10,7 +10,8 @@ reads=$5
 output_report=$6
 output_kraken=$7
 
-mkdir $4
+echo $Outdir
+mkdir $Outdir
 
 module load $Kraken2
 
@@ -18,8 +19,11 @@ module load $Kraken2
 kraken2 \
 --db $kraken2db \
 --confidence $confidence \
+--memory-mapping \
 --report $output_report \
 --use-names \
 --threads 20 --report-minimizer-data \
 --output $output_kraken \
 $reads
+
+

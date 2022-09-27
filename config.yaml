@@ -1,6 +1,6 @@
 # CONFIG file, change paths here
 reads: "/user_data/men/sepseq/silico_reads/db208test_baseline/test_read_subset/"
-kraken2db: "/user_data/men/sepseq/databases/2022_05_25_new_kraken_database/kraken2_db_NCBI_gtdb/"
+kraken2db: "/user_data/men/sepseq/databases/2022_05_25_new_kraken_database/kraken2_db_human_genome/" #"/user_data/men/sepseq/databases/2022_05_25_new_kraken_database/kraken2_db_NCBI_gtdb/"
 kraken2_genomes: "/user_data/men/sepseq/databases/2022_05_25_new_kraken_database/genomes/refseq/viral/GCF_000819615.1/GCF_000819615.1_ViralProj14015_genomic.fna"
 
 Bowtie2: "Bowtie2/2.4.2-foss-2020b"

@@ -1,13 +1,19 @@
 configfile: "config.yaml"
+shell("""
+    mkdir /dev/shm/NCBI_GTDB_merge_kraken2db/
+    cp config["kraken2db"]*k2d /dev/shm/NCBI_GTDB_merge_kraken2db/
+""")
 
 rule all:
     input:
-        "data/index/kraken2_genomes.1.bt2",
-        expand("data/kraken2_classification/{sample}.report", sample = config["SAMPLE"])
+        multiext("data/index/kraken2_genomes", ".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"),
+        expand("data/kraken2_classification/{sample}/{sample}.report", sample = config["SAMPLE"]),
+        expand("data/microbial_taxids/{sample}/genus_list.txt", sample = config["SAMPLE"])#,
+   #     expand("data/microbial_reads/{sample}/{taxID}.fastq", taxID = SplitGenusList("data/microbial_taxids/{sample}/genus_list.txt"))
 
 
 rule build_bowtie2_database:
-    output: "data/index/kraken2_genomes.1.bt2"
+    output: multiext("data/index/kraken2_genomes", ".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2")
     threads: 30
     params: 
         genomes = config["kraken2_genomes"],
@@ -21,33 +27,20 @@ rule build_bowtie2_database:
         {params.outdir}
         """
 
-rule load_db_to_shm:
-    output:
-        "dev/shm/NCBI_GTDB_merge_kraken2db/hash.k2d"
-    params:
-        kraken2db = config["kraken2db"]
-    shell:
-        """
-        mkdir /dev/shm/NCBI_GTDB_merge_kraken2db/
-        cp {params.kraken2db}*k2d /dev/shm/NCBI_GTDB_merge_kraken2db/
-        """
-
 rule classify_reads_kraken2:
     input: 
-        "dev/shm/NCBI_GTDB_merge_kraken2db/hash.k2d",
         reads = config["reads"]+"{sample}.fastq"
     params:
         kraken2 = config["Kraken2"],
         kraken2_database = config["kraken2db"],
         confidence = config["Kraken2_confidence"],
-        outdir = "data/kraken2_classification"
+        outdir = "data/kraken2_classification/{sample}/"
     output:
-        report = "data/kraken2_classification/{sample}.report",
-        kraken = "data/kraken2_classification/{sample}.kraken"
+        report = "data/kraken2_classification/{sample}/{sample}.report",
+        kraken = "data/kraken2_classification/{sample}/{sample}.kraken"
     shell:
         """
-        code/classify_reads_kraken2.sh \ 
-        {params.kraken2} \
+        code/classify_reads_kraken2.sh {params.kraken2} \
         {params.kraken2_database} \
         {params.confidence} \
         {params.outdir} \
@@ -55,5 +48,58 @@ rule classify_reads_kraken2:
         {output.report} \
         {output.kraken}
 
-        rm -r /dev/shm/NCBI_GTDB_merge_kraken2db
+        #rm -r /dev/shm/NCBI_GTDB_merge_kraken2db
         """
+
+
+rule extract_microbial_taxids:
+    input:
+        "data/kraken2_classification/{sample}/{sample}.report",
+        config["Rlibpath"]
+    output:
+        "data/microbial_taxids/{sample}/genus_list.txt"
+    script:
+        "code/extract_microbial_taxids.R"
+
+def SplitGenusList(genus_list):
+    genus_list = open(genus_list)
+    contents = genus_list.read()
+    contents_split = contents.splitlines()
+    return contents_split
+
+checkpoint split_taxids:
+    input:
+        taxID_fastq=expand(result("data/microbial_reads/{sample}/{taxID}.fastq"), taxID=SplitGenusList("data/microbial_taxids/{sample}/genus_list.txt"))
+    output:
+        touch(result("taxID_introduction.done"))
+
+taxIDs = None
+def find_bins_with_16s():
+    output_list=[]
+    for name in SAMPLES:
+        path = result("cmscan_subsetted_16s/"+name+".tblout")
+        num_extracted = helper_functions.count_number_of_lines_in_file(path)-1
+        if num_extracted is not None and int(num_extracted) > 0:
+            output_list.append(name)
+    global BINS_WITH_16S
+    BINS_WITH_16S = output_list
+def get_bins_with_extracted_16s_to_combine(wildcards):
+    checkpoint_output = checkpoints.collect_bins_with_16s.get()
+    if BINS_WITH_16S is None:
+        find_bins_with_16s()
+    names = BINS_WITH_16S
+    return expand(result("extracted_16s_with_mag_ids/{sample}.fa"), sample=names)
+
+
+
+rule extract_microbial_reads:
+    input:
+        taxID_list = "data/microbial_taxids/{sample}/genus_list.txt",
+        kraken_file = "data/kraken2_classification/{sample}/{sample}.kraken",
+        reads = config["reads"]+"{sample}.fastq"
+    output:
+        out_reads = expand("data/microbial_reads/{sample}/{taxID}.fastq", taxID = SplitGenusList(input.taxID_list))
+    run:
+        for taxID in SplitGenusList({input.taxID_list}):
+            shell("python code/extract_kraken_reads.py --kraken {input.kraken_file} -s {input.reads} -o {output.out_reads} -t taxID --include-children")
+
