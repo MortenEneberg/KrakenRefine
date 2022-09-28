@@ -85,13 +85,13 @@ rule extract_microbial_reads:
 
 rule map_microbial_reads:
     input:
-        reads_taxID = "data/microbial_reads/{sample}/{taxID}.fastq",
-        "data/index/kraken2_genomes.1.bt2", ".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2")
+        reads_taxID = "data/microbial_reads/{sample}/{taxID}.fastq"#,
+        #multiext("data/index/kraken2_genomes.1.bt2", ".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2")
     params:
         bowtie2 = config["Bowtie2"]
     output:
-        sam = "data/mapped_reads/{sample}/{taxID}.sam",
-        report = "data/mapped_reads/{sample}/{taxID}.csv",
+        #sam = "data/mapped_reads/{sample}/{taxID}.sam",
+        #report = "data/mapped_reads/{sample}/{taxID}.csv",
         touch("data/mapped_reads/{sample}/mapping_microbial_reads.done")
     shell:
         """
