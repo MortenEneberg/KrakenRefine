@@ -9,7 +9,7 @@ report=$4
 
 module load $Bowtie2
 
-bowtie2 -x data/index/kraken2_genomes \
+bowtie2 -x data/index/kraken2_genomes/ \
 	-U $reads_taxID \
 	-f \
 	--local \
