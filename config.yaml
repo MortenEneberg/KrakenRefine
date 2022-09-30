@@ -5,6 +5,7 @@ kraken2_genomes: "/user_data/men/sepseq/databases/2022_05_25_new_kraken_database
 
 Bowtie2: "Bowtie2/2.4.2-foss-2020b"
 Kraken2: "Kraken2/2.1.1-foss-2018a-Perl-5.26.1"
+Seqkit: "SeqKit/2.0.0"
 
 SAMPLE: ["reads_50", "reads_70", "reads_90"]
 

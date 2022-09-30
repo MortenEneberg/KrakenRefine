@@ -10,8 +10,6 @@ reads=$5
 output_report=$6
 output_kraken=$7
 
-echo $Outdir
-mkdir $Outdir
 
 module load $Kraken2
 

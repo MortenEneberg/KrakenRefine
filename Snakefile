@@ -29,7 +29,7 @@ rule load_database_to_shm:
     shell:
         """
         mkdir /dev/shm/NCBI_GTDB_merge_kraken2db
-        cp {input.kraken2_database}*k2d /dev/shm/NCBI_GTDB_merge_kraken2db/
+        cp {input.kraken2_database}/*k2d /dev/shm/NCBI_GTDB_merge_kraken2db/
         """
 
 rule classify_reads_kraken2:
@@ -67,9 +67,9 @@ rule unload_database:
 
 rule extract_microbial_taxids:
     input:
-        "data/kraken2_classification/database_unloaded.done",
         "data/kraken2_classification/{sample}/{sample}.report",
-        config["Rlibpath"]
+        config["Rlibpath"],
+        "data/kraken2_classification/database_unloaded.done"
     output:
         "data/microbial_taxids/{sample}/genus_list.txt"
     script:
@@ -93,7 +93,7 @@ rule extract_microbial_reads:
         import os
         genus_list = SplitGenusList(input.taxID_list)
         for taxID in genus_list:
-            shell('python code/extract_kraken_reads.py -k {input.kraken_file} -s {input.reads} -o "data/microbial_reads/{wildcards.sample}/' + taxID + '.fastq" -t ' + taxID + ' -r {input.report_file} --include-children')
+            shell('module load Biopython/1.78-foss-2020b-Python-3.8.6; python code/extract_kraken_reads.py -k {input.kraken_file} -s {input.reads} -o "data/microbial_reads/{wildcards.sample}/' + taxID + '.fastq" -t ' + taxID + ' -r {input.report_file} --include-children; module purge')
 
 
 rule map_microbial_reads:
@@ -110,4 +110,29 @@ rule map_microbial_reads:
         genus_list = SplitGenusList(input.taxID_list)
         for taxID in genus_list:
             shell('code/map_microbial_reads.sh {params.bowtie2} "data/microbial_reads/{wildcards.sample}/' + taxID + '.fastq" "data/mapped_reads/{wildcards.sample}/' + taxID + '.sam" "data/mapped_reads/{wildcards.sample}/' + taxID + '.csv"') 
+
+rule extract_read_lengths:
+    input:
+        reads = config["reads"]+"{sample}.fastq",
+    output:
+        read_lengths = "data/read_lengths/{sample}/read_lengths.tsv"
+    params:
+        seqkit = config["Seqkit"]
+    shell:
+        """    
+        module load {params.seqkit}
+        seqkit fx2tab -nl {input.reads} > {output.read_lengths}
+        module purge
+        """
+
+rule evaluate_mappings:
+    input:
+        touch("data/mapped_reads/{sample}/mapping_microbial_reads.done"),
+         config["Rlibpath"],
+        "data/kraken2_classification/{sample}.report",
+        read_lengths = "data/read_lengths/{sample}/read_lengths.tsv"
+    output:
+        "data/tax_filtered_report/{sample}.report"
+    script:
+        "code/evaluate_mappings.R"
 
