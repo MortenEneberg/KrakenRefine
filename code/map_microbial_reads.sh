@@ -9,17 +9,20 @@ report=$4
 
 module load $Bowtie2
 
+echo $reads_taxID
+
 bowtie2 -x data/index/kraken2_genomes \
 	-U $reads_taxID \
 	-f \
+	-p 20 \
 	--local \
-	-D 30 -R 4 -N 0 -L 5 -i S,1,0.25 \
-	-p 50 \
-	-a \
+	--sensitive-local \
+	-k 2 \
 	--mp 2,2 \
-	--score-min C,31 \
+	--score-min G,20,8 \
 	--met-file $report \
+	--no-hd \
+	--mm \
 	-S $sam
-
 
 module purge

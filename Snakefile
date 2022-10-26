@@ -4,21 +4,25 @@ rule all:
     input:
         expand("data/mapped_reads/{sample}/mapping_microbial_reads.done", sample = config["SAMPLE"])
 
+
 rule build_bowtie2_database:
     output: 
-        multiext("data/index/kraken2_genomes", ".1.bt2", ".2.bt2", ".3.bt2", ".4.bt2", ".rev.1.bt2", ".rev.2.bt2"),
+        "data/genomes/cat_genomes.fna",
+        multiext("data/index/kraken2_genomes", ".1.bt2l", ".2.bt2l", ".3.bt2l", ".4.bt2l", ".rev.1.bt2l", ".rev.2.bt2l"),
         touch("data/index/build_database.done")
     threads: 30
     params: 
-        genomes = config["kraken2_genomes"],
         bowtie2 = config["Bowtie2"],
-        outdir = "data/index"
+        outdir_genomes = "data/genomes",
+        outdir_index = "data/index",
+        dbgenomes = config["kraken2_genomes"]
     shell:
         """
         code/build_bowtie2_database.sh \
-        {params.genomes} \
+        {params.dbgenomes} \
         {params.bowtie2} \
-        {params.outdir}
+        {params.outdir_index} \
+        {params.outdir_genomes}
         """
 
 rule load_database_to_shm:
@@ -128,9 +132,10 @@ rule extract_read_lengths:
 rule evaluate_mappings:
     input:
         "data/mapped_reads/{sample}/mapping_microbial_reads.done",
-         config["Rlibpath"],
-        "data/kraken2_classification/{sample}.report",
-        read_lengths = "data/read_lengths/{sample}/read_lengths.tsv"
+        config["Rlibpath"],
+        kraken="data/kraken2_classification/{sample}/{sample}.report",
+        read_lengths = "data/read_lengths/{sample}/read_lengths.tsv",
+        sam_files = "data/mapped_reads/{sample}/"
     output:
         "data/tax_filtered_report/{sample}.report"
     script:

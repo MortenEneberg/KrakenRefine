@@ -14,8 +14,7 @@ return(report)
 }
 
 filter_genus_tax<-function(report_file) {
-    genus_tax_list<-filter(report_file, taxRank == "G" 
-    #& taxID != "9605"
+    genus_tax_list<-filter(report_file, taxRank == "G" & taxID != "9605"
     )$taxID
 }
 
