@@ -10,3 +10,7 @@ rule evaluate_mappings:
     script:
         "code/evaluate_mappings.R"
 
+
+gunzip -r "/user_data/men/sepseq/databases/2022_10_18_kraken2_EUPATH_database/genomes/"
+
+grep -r ">" *.fna | sed -r 's/[:>]+/\t/g' > data/mapped_reads/accession2genome.tsv
