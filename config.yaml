@@ -6,6 +6,8 @@ kraken2_genomes: "/user_data/men/sepseq/databases/2022_10_18_kraken2_EUPATH_data
 Bowtie2: "Bowtie2/2.4.2-foss-2020b"
 Kraken2: "Kraken2/2.1.1-foss-2018a-Perl-5.26.1"
 Seqkit: "SeqKit/2.0.0"
+Samtools: "SAMtools/1.14-GCC-10.2.0"
+Bedtools: "BEDTools/2.27.1-GCCcore-6.4.0"
 
 SAMPLE: ["reads_50", "reads_70", "reads_90"]
 

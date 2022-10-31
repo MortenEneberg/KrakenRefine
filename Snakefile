@@ -2,7 +2,7 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("data/mapped_reads/{sample}/mapping_microbial_reads.done", sample = config["SAMPLE"])
+        expand("data/coverage/{sample}/coverage_microbial_reads.done", sample = config["SAMPLE"])
 
 
 rule build_bowtie2_database:
@@ -106,14 +106,35 @@ rule map_microbial_reads:
         taxID_list="data/microbial_taxids/{sample}/genus_list.txt",
         done_statement_extract_reads = "data/microbial_reads/{sample}/extracting_microbial_reads.done"
     params:
-        bowtie2 = config["Bowtie2"]
+        bowtie2 = config["Bowtie2"],
+        samtools = config["Samtools"]
     output:
-        touch("data/mapped_reads/{sample}/mapping_microbial_reads.done")
+        touch("data/mapped_reads/{sample}/mapping_microbial_reads.done"),
+        touch("data/mapped_reads_header/{sample}/mapping_microbial_reads.done")
     run:
         import os
         genus_list = SplitGenusList(input.taxID_list)
         for taxID in genus_list:
-            shell('code/map_microbial_reads.sh {params.bowtie2} "data/microbial_reads/{wildcards.sample}/' + taxID + '.fastq" "data/mapped_reads/{wildcards.sample}/' + taxID + '.sam" "data/mapped_reads/{wildcards.sample}/' + taxID + '.csv"') 
+            shell('code/map_microbial_reads.sh {params.bowtie2} "data/microbial_reads/{wildcards.sample}/' + taxID + '.fastq" "data/mapped_reads/{wildcards.sample}/' + taxID + '.sam" "data/mapped_reads/{wildcards.sample}/' + taxID + '.csv" "data/mapped_reads_header/{wildcards.sample}/' + taxID + '.sam" "data/mapped_reads_header/{wildcards.sample}/' + taxID + '.csv"') 
+
+rule sam_bam_coverage:
+    input:
+        "data/mapped_reads/{sample}/mapping_microbial_reads.done",
+        "data/mapped_reads_header/{sample}/mapping_microbial_reads.done",
+        taxID_list="data/microbial_taxids/{sample}/genus_list.txt"
+    params:
+        samtools = config["Samtools"],
+        bedtools = config["Bedtools"]
+    output:
+        touch("data/coverage/{sample}/coverage_microbial_reads.done")
+    run:
+        import os
+        genus_list = SplitGenusList(input.taxID_list)
+        for taxID in genus_list:
+            shell('code/sam_bam_coverage.sh {params.samtools} {params.bedtools} "data/mapped_reads_header/{wildcards.sample}/' + taxID + '.sam" "data/mapped_reads_header/{wildcards.sample}/' + taxID + '.bam" "data/coverage/{wildcards.sample}/' + taxID + '.bed"') 
+
+
+
 
 rule extract_read_lengths:
     input:
@@ -131,11 +152,11 @@ rule extract_read_lengths:
 
 rule evaluate_mappings:
     input:
-        "data/mapped_reads/{sample}/mapping_microbial_reads.done",
+        "data/coverage/{sample}/coverage_microbial_reads.done",
         config["Rlibpath"],
         kraken="data/kraken2_classification/{sample}/{sample}.report",
         read_lengths = "data/read_lengths/{sample}/read_lengths.tsv",
-        sam_files = "data/mapped_reads/{sample}/"
+        sam_files = "data/mapped_reads/{sample}/",
     output:
         "data/tax_filtered_report/{sample}.report"
     script:

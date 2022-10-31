@@ -13,4 +13,4 @@ rule evaluate_mappings:
 
 gunzip -r "/user_data/men/sepseq/databases/2022_10_18_kraken2_EUPATH_database/genomes/"
 
-grep -r ">" *.fna | sed -r 's/[:>]+/\t/g' > data/mapped_reads/accession2genome.tsv
+grep -r ">" *.fna | sed -r 's/[:>]+/\t/g' > /user_data/men/sepseq/clinical_studies/init_tests/kraken2_filter/data/mapped_reads/accession2genome.tsv
