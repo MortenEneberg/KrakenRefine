@@ -13,3 +13,5 @@ SAMPLE: ["reads_50", "reads_70", "reads_90"]
 
 Rlibpath: "/user_data/men/sepseq/R_lib/x86_64-pc-linux-gnu-library/3.6"
 Kraken2_confidence: "0.2"
+
+WD: "/user_data/men/sepseq/clinical_studies/init_tests/kraken2_filter/"

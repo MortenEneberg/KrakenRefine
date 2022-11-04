@@ -2,7 +2,7 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("data/coverage/{sample}/coverage_microbial_reads.done", sample = config["SAMPLE"])
+        expand("data/KrakenRefine/{sample}/KrakenRefine_{sample}.pdf", sample = config["SAMPLE"])
 
 
 rule build_bowtie2_database:
@@ -109,56 +109,49 @@ rule map_microbial_reads:
         bowtie2 = config["Bowtie2"],
         samtools = config["Samtools"]
     output:
-        touch("data/mapped_reads/{sample}/mapping_microbial_reads.done"),
-        touch("data/mapped_reads_header/{sample}/mapping_microbial_reads.done")
+        touch("data/mapped_reads/{sample}/mapping_microbial_reads.done")
     run:
         import os
         genus_list = SplitGenusList(input.taxID_list)
         for taxID in genus_list:
-            shell('code/map_microbial_reads.sh {params.bowtie2} "data/microbial_reads/{wildcards.sample}/' + taxID + '.fastq" "data/mapped_reads/{wildcards.sample}/' + taxID + '.sam" "data/mapped_reads/{wildcards.sample}/' + taxID + '.csv" "data/mapped_reads_header/{wildcards.sample}/' + taxID + '.sam" "data/mapped_reads_header/{wildcards.sample}/' + taxID + '.csv"') 
+            shell('code/map_microbial_reads.sh {params.bowtie2} "data/microbial_reads/{wildcards.sample}/' + taxID + '.fastq" "data/mapped_reads/{wildcards.sample}/' + taxID + '.sam" "data/mapped_reads/{wildcards.sample}/' + taxID + '.csv"') 
 
-rule sam_bam_coverage:
+rule seq_length:
     input:
-        "data/mapped_reads/{sample}/mapping_microbial_reads.done",
-        "data/mapped_reads_header/{sample}/mapping_microbial_reads.done",
-        taxID_list="data/microbial_taxids/{sample}/genus_list.txt"
+        "data/index/build_database.done"
     params:
         samtools = config["Samtools"],
-        bedtools = config["Bedtools"]
+        cat_genomes = "data/cat_genomes.fna"
     output:
-        touch("data/coverage/{sample}/coverage_microbial_reads.done")
+        "data/accession2length.tsv"
     run:
-        import os
-        genus_list = SplitGenusList(input.taxID_list)
-        for taxID in genus_list:
-            shell('code/sam_bam_coverage.sh {params.samtools} {params.bedtools} "data/mapped_reads_header/{wildcards.sample}/' + taxID + '.sam" "data/mapped_reads_header/{wildcards.sample}/' + taxID + '.bam" "data/coverage/{wildcards.sample}/' + taxID + '.bed"') 
+        """
+        code/seq_length.sh {output} \
+        {params.samtools} \
+        {params.cat_genomes}
+        """
 
-
-
-
-rule extract_read_lengths:
-    input:
-        reads = config["reads"]+"{sample}.fastq",
-    output:
-        read_lengths = "data/read_lengths/{sample}/read_lengths.tsv"
+rule accession2genome:
     params:
-        seqkit = config["Seqkit"]
-    shell:
-        """    
-        module load {params.seqkit}
-        seqkit fx2tab -nl {input.reads} > {output.read_lengths}
-        module purge
+        kraken2_genomes=config["kraken2_genomes"]
+    output:
+        "data/accession2genome.tsv"
+    run:
+         """
+        grep -r ">" {params.kraken2_genomes}*.fna | sed -r 's/[:>]+/\t/g' > {output}
         """
 
 rule evaluate_mappings:
     input:
-        "data/coverage/{sample}/coverage_microbial_reads.done",
         config["Rlibpath"],
         kraken="data/kraken2_classification/{sample}/{sample}.report",
-        read_lengths = "data/read_lengths/{sample}/read_lengths.tsv",
         sam_files = "data/mapped_reads/{sample}/",
+        accession2length = "data/accession2length.tsv",
+        accessuib2genome = "data/accession2genome.tsv",
+        WD = config["WD"],
+        map_done = "data/mapped_reads/{sample}/mapping_microbial_reads.done"
     output:
-        "data/tax_filtered_report/{sample}.report"
+        svg="data/KrakenRefine/{sample}/KrakenRefine_{sample}.svg",
+        pdf="data/KrakenRefine/{sample}/KrakenRefine_{sample}.pdf"
     script:
         "code/evaluate_mappings.R"
-
