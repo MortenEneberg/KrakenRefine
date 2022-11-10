@@ -1,17 +1,18 @@
 # CONFIG file, change paths here
-reads: "/user_data/men/sepseq/silico_reads/db208test_baseline/processed_cat_reads/"
-kraken2db: "/user_data/men/sepseq/databases/2022_05_25_new_kraken_database/kraken2_db_NCBI_gtdb/"
-kraken2_genomes: "/user_data/men/sepseq/databases/2022_10_18_kraken2_EUPATH_database/genomes/"
+reads: "/user_data/men/sepseq/silico_reads/db208test_baseline/processed_cat_reads/" #Folder with reads
+kraken2db: "/user_data/men/sepseq/databases/2022_05_25_new_kraken_database/kraken2_db_NCBI_gtdb/" #Kraken2 database
+kraken2_genomes: "/user_data/men/sepseq/databases/2022_10_18_kraken2_EUPATH_database/genomes/" #Genomes
 
+## MODULES ##
 Bowtie2: "Bowtie2/2.4.2-foss-2020b"
 Kraken2: "Kraken2/2.1.1-foss-2018a-Perl-5.26.1"
 Seqkit: "SeqKit/2.0.0"
 Samtools: "SAMtools/1.14-GCC-10.2.0"
 Bedtools: "BEDTools/2.27.1-GCCcore-6.4.0"
 
-SAMPLE: ["reads_50", "reads_70", "reads_90"]
+SAMPLE: ["reads_50", "reads_70", "reads_90"] #Sample names to be run
 
-Rlibpath: "/user_data/men/sepseq/R_lib/x86_64-pc-linux-gnu-library/3.6"
-Kraken2_confidence: "0.2"
+Rlibpath: "/user_data/men/sepseq/R_lib/x86_64-pc-linux-gnu-library/3.6" #Path to R libraries
+Kraken2_confidence: "0.2" #Confidence level for Kraken2 classification
 
-WD: "/user_data/men/sepseq/clinical_studies/init_tests/kraken2_filter/"
+WD: "/user_data/men/sepseq/clinical_studies/init_tests/kraken2_filter/" #Working Directory
