@@ -31,6 +31,6 @@ The underlying idea came from the observation that reads from simulated datasets
   </div>
 </div>
 
-Based on the pattern exemplified above, **KrakenRefine** groups each genera as either a true positive or a false positive. The grouping is based on a ratio of 1) the number of reads in the genome window with the most reads and 2) the sum of reads mapping to the genome. The output from the pipeline is a heatmap as shown below with groupings:
+Based on the pattern exemplified above, **KrakenRefine** groups each genera as either a true positive or a false positive. The grouping is based on a ratio of 1) the number of reads in the genome window with the most reads and 2) the sum of reads mapping to the genome. The output from the pipeline is a heatmap as shown below with groupings, where green genera are true positives and red genera are false positives:
 
 ![Alt text](reads_90_compare.svg "Title")
