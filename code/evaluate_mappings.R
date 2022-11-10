@@ -116,7 +116,7 @@ contig_length_subset <- contig_length %>%
   mutate(end_pos = cumsum(endpos+1),
          start_pos = end_pos - endpos)
 
-windowsize = 5000
+windowsize = 8000
 
 sam_files_grouped <- sam_files %>%
   distinct(read, .keep_all = T) %>%
@@ -199,6 +199,7 @@ kraken_report_indicator <- kraken_report %>%
          tick_name = glue("<i style='color:{tick_color}'>{name}</i>")) 
 
 
+kraken_report_indicator$tick_name <- factor(kraken_report_indicator$tick_name, levels=(kraken_report_indicator$tick_name)[order(kraken_report_indicator$cladeReads)])
 krakenrefineplot<-ggplot(kraken_report_indicator, aes("",tick_name, fill = cladeReads)) +
   geom_tile() +
   theme_bw() +
@@ -211,7 +212,7 @@ krakenrefineplot<-ggplot(kraken_report_indicator, aes("",tick_name, fill = clade
   labs(x="", y = "Genus", fill = "Reads", title = "Grouped by KrakenRefine") +
   scale_color_manual(name = "KrakenRefine")
 
-
+krakenrefineplot
 
 kraken_report_plot <- kraken_report %>%
   mutate(name = as.character(name)) %>%
@@ -220,8 +221,11 @@ kraken_report_plot <- kraken_report %>%
   filter(name != "Homo") %>%
   filter(cladeReads>3) %>%
   mutate(kraken_genus_taxid = as.character(kraken_genus_taxid)) %>%
-  mutate(tick_color = "grey",
+  mutate(tick_color = "black",
          tick_name = glue("<i style='color:{tick_color}'>{name}</i>")) 
+
+kraken_report_plot$tick_name <- factor(kraken_report_plot$tick_name, levels=(kraken_report_plot$tick_name)[order(kraken_report_plot$cladeReads)])
+
 
 krakennotrefineplot<-ggplot(kraken_report_plot, aes("",tick_name, fill = cladeReads)) +
   geom_tile() +
@@ -236,7 +240,9 @@ krakennotrefineplot<-ggplot(kraken_report_plot, aes("",tick_name, fill = cladeRe
        tick_color = "Legend") +
   scale_color_manual(name = "KrakenRefine")
 
+
 image<-plot_grid(krakennotrefineplot, krakenrefineplot, labels = "AUTO")
+image
 ggsave(file = paste0("data/KrakenRefine/", sample, "/KrakenRefine_", sample, ".svg"), plot = image, width = 20, height = 20)
 
 plot_df<-genome_windows %>%
