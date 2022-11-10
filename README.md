@@ -24,10 +24,10 @@ The underlying idea came from the observation that reads from simulated datasets
 
 <div class="row">
   <div class="column">
-    <img src="cutibacterium_acnes.svg" alt="Snow" style="width:100%">
+    <img src="cutibacterium_acnes.svg" alt="Snow" style="width:50%">
   </div>
   <div class="column">
-    <img src="gemella.svg" alt="Forest" style="width:100%">
+    <img src="gemella.svg" alt="Forest" style="width:50%">
   </div>
 </div>
 
