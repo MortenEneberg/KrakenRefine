@@ -22,14 +22,10 @@ The pipeline was developed to proces Nanopore metagenomic data from human plasma
 
 The underlying idea came from the observation that reads from simulated datasets classified as species known to be absent, largely map to a limited region of the target genome. While Kraken2 has implemented the feature from KrakenUniq to report counts of [unique minimizers](https://dx.doi.org/10.1186/s13059-018-1568-0) with the `--report-minimizer-data` flag, this seems only to account for these false positives when coverage is higher than what is the case in pathogen identification. An example of a genera that is not filtered by even strict criteria for unique minimizer count is *Gemella*, which - compared to *Cutibacterium* known to be present in the test dataset - has an uneven coverage suggesting database genome contamination.
 
-<div class="row">
-  <div class="column">
-    <img src="cutibacterium_acnes.svg" alt="Snow" style="width:50%">
-  </div>
-  <div class="column">
-    <img src="gemella.svg" alt="Forest" style="width:50%">
-  </div>
-</div>
+Cutibacterium             |  Gemella
+:-------------------------:|:-------------------------:
+![](cutibacterium_acnes.svg)  |  ![](gemella.svg)
+
 
 Based on the pattern exemplified above, **KrakenRefine** groups each genera as either a true positive or a false positive. The grouping is based on a ratio of 1) the number of reads in the genome window with the most reads and 2) the sum of reads mapping to the genome. The output from the pipeline is a heatmap as shown below with groupings, where green genera are true positives and red genera are false positives:
 
