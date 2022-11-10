@@ -149,6 +149,7 @@ rule evaluate_mappings:
         accession2length = "data/accession2length.tsv",
         accessuib2genome = "data/accession2genome.tsv",
         WD = config["WD"],
+        dbfile = config["SQL_database"],
         map_done = "data/mapped_reads/{sample}/mapping_microbial_reads.done"
     output:
         svg="data/KrakenRefine/{sample}/KrakenRefine_{sample}.svg",
