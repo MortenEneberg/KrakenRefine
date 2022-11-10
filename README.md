@@ -13,7 +13,7 @@ Snakemake Pipeline
 
 The pipeline is customised by specifying the paths to these inputs in the **config.yaml** file. 
 
-![Alt text](dag0411.pdf "Title")
+![Alt text](Rulegraph.svg "Title")
 *Rulegraph for Snakemake pipeline*
 
 Example use case
