@@ -16,10 +16,21 @@ The pipeline is customised by specifying the paths to these inputs in the **conf
 ![Alt text](Rulegraph.svg "Title")
 *Rulegraph for Snakemake pipeline*
 
-Example use case
+Example use case: Pathogen identification!
 =====
-![Alt text](KrakenRefine_reads_90.svg "Title")
+The pipeline was developed to proces Nanopore metagenomic data from human plasma samples, with the aim of increasing the specificity for pathogen identification. 
 
-It was developed to reeva
-pipeline to proces kraken2 data to remove false positives by mapping reads to reference genomes
-This is a test
+The underlying idea came from the observation that reads from simulated datasets classified as species known to be absent, largely map to a limited region of the target genome. While Kraken2 has implemented the feature from KrakenUniq to report counts of [unique minimizers](https://dx.doi.org/10.1186/s13059-018-1568-0) with the `--report-minimizer-data` flag, this seems only to account for these false positives when coverage is higher than what is the case in pathogen identification. 
+
+<div class="row">
+  <div class="column">
+    <img src="cutibacterium_acnes.svg" alt="Snow" style="width:100%">
+  </div>
+  <div class="column">
+    <img src="gemella.svg" alt="Forest" style="width:100%">
+  </div>
+</div>
+
+Based on the pattern exemplified above, **KrakenRefine** groups each genera as either a true positive or a false positive. The grouping is based on a ratio of 1) the number of reads in the genome window with the most reads and 2) the sum of reads mapping to the genome. The output from the pipeline is a heatmap as shown below with groupings:
+
+![Alt text](reads_90_compare.svg "Title")

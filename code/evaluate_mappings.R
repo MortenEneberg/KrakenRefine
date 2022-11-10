@@ -1,10 +1,8 @@
 
-WD<-snakemake@input[[8]]
-WD = "/user_data/men/sepseq/clinical_studies/init_tests/kraken2_filter"
+WD<-snakemake@input[[6]]
 setwd(WD)
 
-libpath<-"/user_data/men/sepseq/R_lib/x86_64-pc-linux-gnu-library/3.6"
-#libpath<-snakemake@input[[2]]
+libpath<-snakemake@input[[1]]
 .libPaths(c(libpath, .libPaths()))
 
 library(tidyr)
@@ -20,8 +18,7 @@ library(gridExtra)
 library(svglite)
 
 
-#krakendatapath<-snakemake@input[[3]]
-krakendatapath<-"data/kraken2_classification/reads_90/reads_90.report"
+krakendatapath<-snakemake@input[[2]]
 
 sample = tools::file_path_sans_ext(basename(krakendatapath))
 
@@ -56,8 +53,7 @@ combine_sam_files<-function(file_list){
 
 
 #### LOADING FLEXTAXD SQLITE DATABASE ####
-#dbfile<-snakemake@input[[6]]
-dbfile<-"/user_data/men/sepseq/databases/2022_10_18_kraken2_EUPATH_database/databases/NCBI_GTDB_merge.db"
+dbfile<-snakemake@input[[7]]
 
 sqlite.driver <- dbDriver("SQLite")
 db <- dbConnect(sqlite.driver,
@@ -69,8 +65,9 @@ nodes<-dbReadTable(db, "nodes")
 rank<-dbReadTable(db, "rank")
 tree<-dbReadTable(db, "tree")
 
+accession2genome<-snakemake@input[[5]]
 ##Loading accession2genome file
-accession2genome<- read.csv2(file = "data/accession2genome.tsv", header = F, sep = "\t") %>%
+accession2genome<- read.csv2(file = accession2genome, header = F, sep = "\t") %>%
   unite("accession", V2:V4, remove = TRUE, sep=":") %>%
   separate(accession, into = c("accession", "drop"), sep = "\\s", extra = "merge")%>%
   mutate(V1 = as.character(V1),
@@ -90,8 +87,7 @@ accession2genome2taxid<-accession2genome %>%
 
 
 #### Loading in Sam files ####
-#sam_folder = input[[5]]
-sam_folder<-"data/mapped_reads/reads_90/"
+sam_folder<-snakemake@input[[3]]
 sam_list<-paste(sam_folder, list.files(sam_folder, pattern = ".sam"), sep = "")
 
 sam_files<-combine_sam_files(sam_list) %>%
