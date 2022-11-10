@@ -20,7 +20,7 @@ Example use case: Pathogen identification!
 =====
 The pipeline was developed to proces Nanopore metagenomic data from human plasma samples, with the aim of increasing the specificity for pathogen identification. 
 
-The underlying idea came from the observation that reads from simulated datasets classified as species known to be absent, largely map to a limited region of the target genome. While Kraken2 has implemented the feature from KrakenUniq to report counts of [unique minimizers](https://dx.doi.org/10.1186/s13059-018-1568-0) with the `--report-minimizer-data` flag, this seems only to account for these false positives when coverage is higher than what is the case in pathogen identification. 
+The underlying idea came from the observation that reads from simulated datasets classified as species known to be absent, largely map to a limited region of the target genome. While Kraken2 has implemented the feature from KrakenUniq to report counts of [unique minimizers](https://dx.doi.org/10.1186/s13059-018-1568-0) with the `--report-minimizer-data` flag, this seems only to account for these false positives when coverage is higher than what is the case in pathogen identification. An example of a genera that is not filtered by even strict criteria for unique minimizer count is *Gemella*, which - compared to *Cutibacterium* known to be present in the test dataset - has an uneven coverage suggesting database genome contamination.
 
 <div class="row">
   <div class="column">
