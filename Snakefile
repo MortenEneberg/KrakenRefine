@@ -2,7 +2,7 @@ configfile: "config.yaml"
 
 rule all:
     input:
-        expand("data/KrakenRefine/{sample}/KrakenRefine_{sample}.pdf", sample = config["SAMPLE"])
+        expand("data/KrakenRefine/{sample}/KrakenRefine_{sample}.svg", sample = config["SAMPLE"])
 
 
 rule build_bowtie2_database:
@@ -153,6 +153,6 @@ rule evaluate_mappings:
         map_done = "data/mapped_reads/{sample}/mapping_microbial_reads.done"
     output:
         svg="data/KrakenRefine/{sample}/KrakenRefine_{sample}.svg",
-        pdf="data/KrakenRefine/{sample}/KrakenRefine_{sample}.pdf"
+        #pdf="data/KrakenRefine/{sample}/KrakenRefine_{sample}.pdf"
     script:
         "code/evaluate_mappings.R"

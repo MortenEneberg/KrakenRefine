@@ -5,18 +5,17 @@ setwd(WD)
 libpath<-snakemake@input[[1]]
 .libPaths(c(libpath, .libPaths()))
 
-library(tidyr)
-library(dplyr)
-library(RSQLite)
-library(ggplot2)
-library(RColorBrewer)
-library(glue)
-library(ggtext)
-library(cowplot)
-library(scales)
-library(gridExtra)
-library(svglite)
-
+suppressMessages(suppressWarnings(library(tidyr)))
+suppressMessages(suppressWarnings(library(dplyr)))
+suppressMessages(suppressWarnings(library(RSQLite)))
+suppressMessages(suppressWarnings(library(ggplot2)))
+suppressMessages(suppressWarnings(library(RColorBrewer)))
+suppressMessages(suppressWarnings(library(glue)))
+suppressMessages(suppressWarnings(library(ggtext)))
+suppressMessages(suppressWarnings(library(cowplot)))
+suppressMessages(suppressWarnings(library(scales)))
+suppressMessages(suppressWarnings(library(gridExtra)))
+suppressMessages(suppressWarnings(library(svglite)))
 
 krakendatapath<-snakemake@input[[2]]
 
@@ -88,7 +87,8 @@ accession2genome2taxid<-accession2genome %>%
 
 #### Loading in Sam files ####
 sam_folder<-snakemake@input[[3]]
-sam_list<-paste(sam_folder, list.files(sam_folder, pattern = ".sam"), sep = "")
+sam_list<-paste(sam_folder, list.files(sam_folder, pattern = ".sam"), sep = "/")
+
 
 sam_files<-combine_sam_files(sam_list) %>%
   left_join(accession2genome2taxid, by = "accession") 
@@ -238,7 +238,7 @@ krakennotrefineplot<-ggplot(kraken_report_plot, aes("",tick_name, fill = cladeRe
 
 
 image<-plot_grid(krakennotrefineplot, krakenrefineplot, labels = "AUTO")
-image
+
 ggsave(file = paste0("data/KrakenRefine/", sample, "/KrakenRefine_", sample, ".svg"), plot = image, width = 20, height = 20)
 
 plot_df<-genome_windows %>%
@@ -254,8 +254,8 @@ plot_df<-genome_windows %>%
   labs(x = "Genome window", y = "Read count") 
   )
 
-pdf(paste("data/KrakenRefine_", sample, ".pdf", sep = ""), onefile = T)
-for(i in seq(length(plot_df$plots))) {
-  do.call("grid.arrange", plot_df$plots[[i]])
-}
-dev.off()
+#pdf(paste("data/KrakenRefine_", sample, ".pdf", sep = ""), onefile = T)
+#for(i in seq(length(plot_df$plots))) {
+#  do.call("grid.arrange", plot_df$plots[[i]])
+#}
+#dev.off()
