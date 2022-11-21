@@ -31,4 +31,4 @@ Based on the pattern exemplified above, **KrakenRefine** groups each genera as e
 
 ![Alt text](reads_90_compare.svg "Title")
 
-The script to extracts Kraken reads by taxID is borrowed from [KrakenTools] (https://github.com/jenniferlu717/KrakenTools).
+The script to extracts Kraken reads by taxID is borrowed from [KrakenTools](https://github.com/jenniferlu717/KrakenTools).
