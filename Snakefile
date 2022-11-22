@@ -132,6 +132,8 @@ rule seq_length:
         """
 
 rule accession2genome:
+    input:
+        "data/index/build_database.done"
     params:
         kraken2_genomes=config["kraken2_genomes"]
     output:
@@ -145,12 +147,13 @@ rule evaluate_mappings:
     input:
         config["Rlibpath"],
         kraken="data/kraken2_classification/{sample}/{sample}.report",
-        sam_files = "data/mapped_reads/{sample}/",
         accession2length = "data/accession2length.tsv",
         accessuib2genome = "data/accession2genome.tsv",
         WD = config["WD"],
         dbfile = config["SQL_database"],
         map_done = "data/mapped_reads/{sample}/mapping_microbial_reads.done"
+    params:
+        sam_files = "data/mapped_reads/{sample}/"
     output:
         svg="data/KrakenRefine/{sample}/KrakenRefine_{sample}.svg",
         #pdf="data/KrakenRefine/{sample}/KrakenRefine_{sample}.pdf"

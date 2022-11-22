@@ -1,5 +1,5 @@
 
-WD<-snakemake@input[[6]]
+WD<-snakemake@input[[5]]
 setwd(WD)
 
 libpath<-snakemake@input[[1]]
@@ -52,7 +52,7 @@ combine_sam_files<-function(file_list){
 
 
 #### LOADING FLEXTAXD SQLITE DATABASE ####
-dbfile<-snakemake@input[[7]]
+dbfile<-snakemake@input[[6]]
 
 sqlite.driver <- dbDriver("SQLite")
 db <- dbConnect(sqlite.driver,
@@ -64,7 +64,7 @@ nodes<-dbReadTable(db, "nodes")
 rank<-dbReadTable(db, "rank")
 tree<-dbReadTable(db, "tree")
 
-accession2genome<-snakemake@input[[5]]
+accession2genome<-snakemake@input[[4]]
 ##Loading accession2genome file
 accession2genome<- read.csv2(file = accession2genome, header = F, sep = "\t") %>%
   unite("accession", V2:V4, remove = TRUE, sep=":") %>%
@@ -86,7 +86,7 @@ accession2genome2taxid<-accession2genome %>%
 
 
 #### Loading in Sam files ####
-sam_folder<-snakemake@input[[3]]
+sam_folder<-snakemake@params[[1]]
 sam_list<-paste(sam_folder, list.files(sam_folder, pattern = ".sam"), sep = "/")
 
 

@@ -7,9 +7,8 @@ Outdir_genomes=$4
 Bowtie=$2
 genomes=$1
 
-
-find $1 -name "*.fna.gz" -type f -exec cat {} + > $Outdir_genomes/cat_genomes.fna.gz
-gunzip $Outdir_genomes/cat_genomes.fna.gz
+find $1 -name "*.fna.gz" -type f -exec gunzip {} +
+find $1 -name "*.fna" -type f -exec cat {} + > $Outdir_genomes/cat_genomes.fna
 
 module load $Bowtie
 
