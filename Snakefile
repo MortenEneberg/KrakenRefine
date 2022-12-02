@@ -1,8 +1,9 @@
 configfile: "config.yaml"
+import os
 
 rule all:
     input:
-        expand("data/KrakenRefine/{sample}/KrakenRefine_{sample}.svg", sample = config["SAMPLE"])
+        expand("data/KrakenRefine/{sample}/KrakenRefine_{sample}.svg", sample = [os.path.splitext(x)[0] for x in os.listdir(config["reads"])])
 
 
 rule build_bowtie2_database:
@@ -48,6 +49,8 @@ rule classify_reads_kraken2:
     output:
         report = "data/kraken2_classification/{sample}/{sample}.report",
         kraken = "data/kraken2_classification/{sample}/{sample}.kraken"
+    threads:
+        20
     shell:
         """
         code/classify_reads_kraken2.sh {params.kraken2} \
@@ -61,7 +64,7 @@ rule classify_reads_kraken2:
 
 rule unload_database:
     input: 
-        expand("data/kraken2_classification/{sample}/{sample}.report", sample = config["SAMPLE"])
+        expand("data/kraken2_classification/{sample}/{sample}.report", sample = [os.path.splitext(x)[0] for x in os.listdir(config["reads"])])
     output:
         touch("data/kraken2_classification/database_unloaded.done")
     shell:
@@ -99,7 +102,6 @@ rule extract_microbial_reads:
         for taxID in genus_list:
             shell('module load Biopython/1.78-foss-2020b-Python-3.8.6; python code/extract_kraken_reads.py -k {input.kraken_file} -s {input.reads} -o "data/microbial_reads/{wildcards.sample}/' + taxID + '.fastq" -t ' + taxID + ' -r {input.report_file} --include-children; module purge')
 
-
 rule map_microbial_reads:
     input:
         "data/index/build_database.done",
@@ -110,6 +112,8 @@ rule map_microbial_reads:
         samtools = config["Samtools"]
     output:
         touch("data/mapped_reads/{sample}/mapping_microbial_reads.done")
+    threads:
+        20
     run:
         import os
         genus_list = SplitGenusList(input.taxID_list)
@@ -121,10 +125,10 @@ rule seq_length:
         "data/index/build_database.done"
     params:
         samtools = config["Samtools"],
-        cat_genomes = "data/cat_genomes.fna"
+        cat_genomes = "data/genomes/cat_genomes.fna"
     output:
         "data/accession2length.tsv"
-    run:
+    shell:
         """
         code/seq_length.sh {output} \
         {params.samtools} \
@@ -138,9 +142,10 @@ rule accession2genome:
         kraken2_genomes=config["kraken2_genomes"]
     output:
         "data/accession2genome.tsv"
-    run:
-         """
-        grep -r ">" {params.kraken2_genomes}*.fna | sed -r 's/[:>]+/\t/g' > {output}
+    shell:
+        """
+        code/accession2genome.sh {output} \
+        {params.kraken2_genomes}
         """
 
 rule evaluate_mappings:
@@ -157,5 +162,7 @@ rule evaluate_mappings:
     output:
         svg="data/KrakenRefine/{sample}/KrakenRefine_{sample}.svg",
         #pdf="data/KrakenRefine/{sample}/KrakenRefine_{sample}.pdf"
+    threads:
+        10
     script:
         "code/evaluate_mappings.R"
