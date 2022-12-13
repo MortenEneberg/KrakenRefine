@@ -3,18 +3,36 @@ title: KrakenRefine
 output: html_document
 ---
 
+```{r Snakemake inputs}
+#mode<-"exp"
+mode<-"snakemake"
+if (mode == "snakemake"){
+WD<-snakemake@input[[5]] 
+setwd(WD)
+libpath<-snakemake@input[[1]]
+krakendatapath<-snakemake@input[[2]]
+sam_folder<-snakemake@params[[1]] #Folder with Sam files
+accession2length=snakemake@input[[3]]
+accession2genome<-snakemake@input[[4]]
+dbfile<-snakemake@input[[6]]} else if (mode == "exp") {
+  WD<-"/user_data/men/sepseq/KrakenRefine/"
+  libpath<-"/user_data/men/sepseq/R_lib/x86_64-pc-linux-gnu-library/4.2"
+  dbfile<-"/user_data/men/sepseq/databases/2022_05_25_new_kraken_database/databases/NCBI_GTDB_merge.db"
+  
+  sample<-"GCF_000960005.1_ASM96000v1_genomic_3"
+  krakendatapath<-paste0(WD, "data/kraken2_classification/", sample, "/", sample, ".report")
+  sam_folder<-paste0(WD, "data/mapped_reads/", sample)
+  accession2genome<-"/user_data/men/sepseq/KrakenRefine/data/accession2genome_cleaned.tsv"
+  accession2length<-"/user_data/men/sepseq/KrakenRefine/data/accession2length.tsv"
+}
+
+```
 
 ```{r Read libraries}
-WD<-snakemake@input[[5]]
-setwd(WD)
+.libPaths(libpath)
 
-libpath<-snakemake@input[[1]]
-.libPaths(c(libpath, .libPaths()))
-
-suppressMessages(suppressWarnings(library(tidyr)))
-suppressMessages(suppressWarnings(library(dplyr)))
+suppressMessages(suppressWarnings(library(tidyverse)))
 suppressMessages(suppressWarnings(library(RSQLite)))
-suppressMessages(suppressWarnings(library(ggplot2)))
 suppressMessages(suppressWarnings(library(RColorBrewer)))
 suppressMessages(suppressWarnings(library(glue)))
 suppressMessages(suppressWarnings(library(ggtext)))
@@ -22,13 +40,12 @@ suppressMessages(suppressWarnings(library(cowplot)))
 suppressMessages(suppressWarnings(library(scales)))
 suppressMessages(suppressWarnings(library(gridExtra)))
 suppressMessages(suppressWarnings(library(svglite)))
+suppressMessages(suppressWarnings(library(data.table)))
 ```
 
 ```{r Read Kraken2 reports for a sample}
-krakendatapath<-snakemake@input[[2]]
 sample = tools::file_path_sans_ext(basename(krakendatapath))
-
-kraken_report<-read.csv2(paste(krakendatapath, sep=""), header = F, comment.char = "#", sep = "\t")  
+kraken_report<-read_tsv(krakendatapath, col_names = F, comment = "#")  
 colnames(kraken_report)<-c("percentage", "cladeReads", "taxonReads", "n_kmers", "n_unique_kmers",
                     "taxRank", "kraken_genus_taxid", "name")
 kraken_report<- kraken_report %>%
@@ -41,8 +58,8 @@ kraken_report<- kraken_report %>%
 
 ```{r Defining functions used in this Markdown}
 read_sam <- function(file) {
-  sam_read<-read.csv2(file = file, header = F, sep = "\t")%>%
-    select(V1, V2, V3, V4, V5, V6)
+  sam_read<-read_tsv(file = file, col_names = F)%>%
+    select(X1, X2, X3, X4, X5, X6)
   colnames(sam_read)<-c("read", "flag", "accession", "start_position", "mapq", "cigar")
   sam_read<-sam_read%>%  
   filter(flag != 4) %>%
@@ -65,8 +82,6 @@ combine_sam_files<-function(file_list){
 ```
 
 ```{r Loading flextaxd SQLite database}
-dbfile<-snakemake@input[[6]]
-
 sqlite.driver <- dbDriver("SQLite")
 db <- dbConnect(sqlite.driver,
                 dbname = dbfile)
@@ -79,35 +94,20 @@ tree<-dbReadTable(db, "tree")
 ```
 
 ```{r Loading accession2genome and accession2length}
-accession2genome<-snakemake@input[[4]]
 ##Loading accession2genome file
-accession2genome<- read.csv2(file = accession2genome, header = F, sep = "\t") %>%
-  unite("accession", V2:V4, remove = TRUE, sep=":") %>%
-  separate(accession, into = c("accession", "drop"), sep = "\\s", extra = "merge")%>%
-  mutate(V1 = as.character(V1),
-  genome = basename(V1)) %>%
-  separate(genome, into = c("genome", "drop2"), sep = ".fna") %>%
-  separate(genome, into = c("genome", "drop3"), sep = "_genomic") %>%
-  separate(genome, into = c("genome", "drop3"), sep = "_ASM") %>%
-  separate(genome, into = c("genome", "drop3"), sep = "_Viral") %>%
-  separate(genome, into = c("genome", "drop3"), sep = "_Genome") %>%
-  separate(genome, into = c("genome", "drop3"), sep = "_GRCh38") %>%
-  select(accession, genome)
-accession2genome["genome"][accession2genome["genome"] == "UniVec_core"] <- "UniVec_core.fna.gz"
+accession2genome<- read_tsv(accession2genome, col_names = T) 
 
-accession2length=snakemake@input[[3]]
-accession2length<-read.csv2(accession2length, header = F, sep="\t")
+accession2length<-read_tsv(accession2length, col_names = F)
 colnames(accession2length)<- c("accession", "contig_length")
 ```
 
-```{r, Merging genome2taxid and accession2genome dataframes}
+```{r Merging genome2taxid and accession2genome dataframes}
 accession2genome2taxid<-accession2genome %>% 
   left_join(genomes2taxid, by = "genome") %>%
   left_join(nodes, by = "id") 
 ```
 
 ```{r Loading sam files}
-sam_folder<-snakemake@params[[1]] #Folder with Sam files
 sam_list<-paste(sam_folder, list.files(sam_folder, pattern = ".sam"), sep = "/") #Make a list of all the Sam files to be loaded
 
 sam_files<-combine_sam_files(sam_list) %>%            #Using the function defined in top to read sam files
@@ -130,7 +130,7 @@ accession2length_subset <- accession2length %>% #Get a subset of the accession2l
          start_pos = end_pos - endpos) #Adding together all the contigs of a particular genome to create a "complete sequence"
 ```
 
-```{r }
+```{r Count reads in each window}
 windowsize = 8000
 
 genome_window_counts <- sam_files %>%
@@ -142,11 +142,11 @@ genome_window_counts <- sam_files %>%
   distinct(accession, read, kraken_genus_taxid, .keep_all = T) %>%
   mutate(start_genome = start_position + start_pos) %>% #Adding the start position of a read on a contig to the start position of the contig in the "complete sequence" genome
   mutate(window = start_genome %/% windowsize + 1) %>%  #Finding out which genome window the read is placed in
-  group_by(genome, window) %>%
+  group_by(genome, kraken_genus_taxid, window) %>%
   summarise(reads = n(),    #Counting the number of reads in each window of each genome
             kraken_genus_taxid = kraken_genus_taxid,
             genome = genome) %>%
-  distinct(genome, window, .keep_all = T)
+  distinct(genome, window, kraken_genus_taxid, .keep_all = T)
 ```
 
 ```{r Getting rows for all the empty windows where no reads were mapped}
@@ -171,7 +171,7 @@ genome_windows<-genome_window_counts %>%
     genome_empty_windows
   ) %>%
   arrange(genome, window) %>%
-  distinct(genome, window, .keep_all = T) %>%
+  distinct(genome, window, kraken_genus_taxid, .keep_all = T) %>%
   group_by(genome, kraken_genus_taxid) 
 ```
 
@@ -187,29 +187,58 @@ genome_windows_sum<-genome_windows %>%
             } else if (sum(reads)<20) {if (max(reads) > 2) {"FP"} else {"TP"}
             } else if (sum(reads)<40) {if (max(reads) > 3) {"FP"} else {"TP"}
             } else if (sum(reads)<80) {if (max(reads) > 4) {"FP"} else {"TP"}
-            } else if (sum(reads)<120) {if (max(reads) > 5) {"FP"} else {"TP"}
-            } else if (sum(reads)<160) {if (max(reads) > 6) {"FP"} else {"TP"}
-            } else if (sum(reads)<200) {if (max(reads) > 7) {"FP"} else {"TP"}
-            } else if (sum(reads)<240) {if (max(reads) > 8) {"FP"} else {"TP"}
-            } else if (sum(reads)<280) {if (max(reads) > 9) {"FP"} else {"TP"}
-            } else if (sum(reads)<320) {if (max(reads) > 10) {"FP"} else {"TP"}
+            } else if (sum(reads)<120) {if (max(reads) > 6) {"FP"} else {"TP"}
+            } else if (sum(reads)<160) {if (max(reads) > 8) {"FP"} else {"TP"}
+            } else if (sum(reads)<200) {if (max(reads) > 10) {"FP"} else {"TP"}
+            } else if (sum(reads)<240) {if (max(reads) > 12) {"FP"} else {"TP"}
+            } else if (sum(reads)<280) {if (max(reads) > 14) {"FP"} else {"TP"}
+            } else if (sum(reads)<320) {if (max(reads) > 15) {"FP"} else {"TP"}
             } else if (max(reads)/sum(reads)<0.08) {"TP"} else {"FP"}) %>%
   group_by(kraken_genus_taxid) %>%
   filter(reads_tot == max(reads_tot)) #Filtering the dataframe to only include 
 ```
+```{r Filter by read mapping taxonomy}
+tax_indicator<-sam_files %>% 
+  filter(flag == 0 | flag == 16) %>%
+  left_join(kraken_report %>% 
+              rename(kraken_name = name) %>%
+              select(kraken_genus_taxid, kraken_name) %>%
+              mutate(kraken_genus_taxid = as.character(kraken_genus_taxid)), by = c("kraken_genus_taxid")) %>%
+  separate(name, into = c("genus_name", "species_name"), sep = "\\s", extra = "merge") %>%
+  mutate(genus_name = as.character(genus_name),
+         kraken_name = as.character(kraken_name),
+         tax_indicator = case_when(kraken_name == genus_name ~ "Same",
+                                   kraken_name != genus_name ~ "Different")) %>%
+  group_by(kraken_genus_taxid, tax_indicator) %>%
+  summarise(
+    kraken_genus_taxid = unique(kraken_genus_taxid),
+    tax_indicator = unique(tax_indicator),
+    count = n()
+      ) %>%
+  group_by(kraken_genus_taxid) %>%
+  filter(sum(count)>3) %>%
+  filter(!is.na(tax_indicator)) %>%
+  pivot_wider(names_from = tax_indicator, values_from = count) %>%
+  replace(is.na(.), 0) %>%
+  mutate(percent_agreement = Same/(Same + Different),
+         tax_indicator = case_when(percent_agreement > 0.8 ~ "TP",
+                                   percent_agreement <= 0.8 ~ "FP"))
+``` 
 
 ```{r Merging the results to the original kraken report}
 kraken_report_indicator <- kraken_report %>%
   mutate(kraken_genus_taxid = as.character(kraken_genus_taxid)) %>%
   left_join(genome_windows_sum, by = "kraken_genus_taxid") %>%
+  left_join(tax_indicator, by = "kraken_genus_taxid") %>%
   filter(!is.na(Indicator)) %>%
-  mutate(tick_color = case_when((Indicator == "TP" ~"darkgreen"),
-                                (Indicator == "FP"~"red"),
+  distinct(name, .keep_all = T) %>%
+  mutate(tick_color = case_when((Indicator == "FP" | tax_indicator == "FP" ~ "red"),
+                                (Indicator == "TP" | tax_indicator == "TP" ~ "darkgreen"),
                                 (Indicator == "Small genome"~"yellow3")),
          tick_name = glue("<i style='color:{tick_color}'>{name}</i>")) 
 ``` 
 
-```{r, Creating the KrakenRefine Plot object}
+```{r Creating the KrakenRefine Plot object}
 kraken_report_indicator$tick_name <- factor(kraken_report_indicator$tick_name, levels=(kraken_report_indicator$tick_name)[order(kraken_report_indicator$cladeReads)])
 kraken_refine_plot<-ggplot(kraken_report_indicator, aes("",tick_name, fill = cladeReads)) +
   geom_tile() +
@@ -224,7 +253,7 @@ kraken_refine_plot<-ggplot(kraken_report_indicator, aes("",tick_name, fill = cla
   scale_color_manual(name = "KrakenRefine")
 ```
 
-```{r, Creating the Normal Kraken results Plot object}
+```{r Creating the Normal Kraken results Plot object}
 kraken_report_plot <- kraken_report %>%
   mutate(kraken_genus_taxid = as.character(kraken_genus_taxid)) %>%
   mutate(tick_color = "black",
@@ -247,7 +276,7 @@ krakennotrefineplot<-ggplot(kraken_report_plot, aes("",tick_name, fill = cladeRe
   scale_color_manual(name = "KrakenRefine")
 ```
 
-```{r, Creating the Kraken2Unique results Plot object}
+```{r Creating the Kraken2Unique results Plot object}
 kraken_unique_report_plot <- kraken_report %>%
   mutate(kraken_genus_taxid = as.character(kraken_genus_taxid)) %>%
   mutate(Indicator = case_when((n_unique_kmers/n_kmers < 0.8 ~ "FP"),
@@ -272,7 +301,8 @@ krakenuniqueplot<-ggplot(kraken_unique_report_plot, aes("",tick_name, fill = cla
   scale_color_manual(name = "KrakenRefine")
 ```
 
-```{r, Saving the image to a .svg file}
+```{r Saving the image to a .svg file and coverage plots to multiple .svg files}
+if(nrow(kraken_report)>0) { #Checkpoint before printing plots since some datasets may not have >3 microbial reads
 image<-plot_grid(krakennotrefineplot, kraken_refine_plot, krakenuniqueplot, labels = "AUTO")
 
 title <- ggdraw() + 
@@ -296,8 +326,6 @@ image_title<-plot_grid(
 )
 
 ggsave(file = paste0("data/KrakenRefine/", sample, "/KrakenRefine_", sample, ".svg"), plot = image_title, width = 20, height = 20)
-```
-
 
 plot_df<-genome_windows %>%
   mutate(genome = as.character(genome)) %>%
@@ -311,9 +339,54 @@ plot_df<-genome_windows %>%
   theme_bw() + 
   labs(x = "Genome window", y = "Read count") 
   )
-  
-#pdf(paste("data/KrakenRefine_", sample, ".pdf", sep = ""), onefile = T)
-#for(i in seq(length(plot_df$plots))) {
-#  do.call("grid.arrange", plot_df$plots[[i]])
-#}
-#dev.off()
+
+
+for(i in seq(length(plot_df$plots))) {
+  print(plot_df$plots[i])
+  name<-plot_df$name[i]
+  ggsave(file=paste0(WD, "/data/KrakenRefine/", sample, "/", sample, "_", name, ".svg"))
+}
+} else{
+  print("No microbial genera w. > 3 reads")
+}
+```
+
+```{r Write tsv files w. Refined report files}
+write.table(kraken_report_indicator, file = paste0(WD, "/data/KrakenRefine/", sample, "/", sample, "_refined", ".tsv"), row.names = F, col.names = T, sep = "\t")
+
+write.table(kraken_unique_report_plot, file = paste0(WD, "/data/KrakenRefine/", sample, "/", sample, "_uniqued", ".tsv"), row.names = F, col.names = T, sep = "\t")
+```
+
+```{r Species level classifications using bowtie2 alignments for the genera that were not flagged as false positive}
+species_classification_df<-sam_files %>%
+  mutate(kraken_genus_taxid = as.character(kraken_genus_taxid)) %>%
+  filter(kraken_genus_taxid %in% (kraken_report_indicator %>% filter(tick_color == "darkgreen") %>% select(kraken_genus_taxid) %>% mutate(kraken_genus_taxid = as.character(kraken_genus_taxid)) %>% pull(kraken_genus_taxid))) %>%
+     group_by(kraken_genus_taxid) %>%
+  count(name) %>%
+  left_join(nodes %>% rename(kraken_genus_taxid = id, genera = name) %>% mutate(kraken_genus_taxid = as.character(kraken_genus_taxid)), by="kraken_genus_taxid") %>%
+  group_by(kraken_genus_taxid) %>%
+  arrange(n) %>%
+  top_n(15, n) %>%
+  mutate(name=factor(name, levels=name)) 
+
+species_classification<-species_classification_df%>%
+  group_by(kraken_genus_taxid) %>%
+  do(
+  name = unique(as.character(.$genera)),
+    plots = ggplot(data = ., aes(x = n, y = name, fill = name)) +
+  geom_col() + 
+  theme_bw() +
+  labs(x = "Number of reads",
+       y = "Species") +
+    ggtitle(paste0("Top 15 species for ", unique(.$genera), ", id: ", unique(.$kraken_genus_taxid))) +
+  theme(legend.position = "off")
+)
+
+
+for(i in seq(length(species_classification$plots))) {
+  genera<-species_classification$name[i]
+  ggsave(file=paste0(WD, "/data/KrakenRefine/", sample, "/", sample, "_", genera, ".svg"), plot = species_classification$plots[[i]], device = "svg")
+}
+
+write.table(species_classification_df, file = paste0(WD, "/data/KrakenRefine/", sample, "/", sample, "_species", ".tsv"), row.names = F, col.names = T, sep = "\t")
+```

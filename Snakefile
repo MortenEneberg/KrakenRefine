@@ -3,7 +3,7 @@ import os
 
 rule all:
     input:
-        expand("data/KrakenRefine/{sample}/KrakenRefine_{sample}.svg", sample = [os.path.splitext(x)[0] for x in os.listdir(config["reads"])])
+        expand("data/KrakenRefine/{sample}/{sample}_refined.tsv", sample = [os.path.splitext(x)[0] for x in os.listdir(config["reads"])])
 
 
 rule build_bowtie2_database:
@@ -148,19 +148,31 @@ rule accession2genome:
         {params.kraken2_genomes}
         """
 
+rule clean_accession2genome:
+    input:
+        WD = config["WD"],
+        "data/accession2genome.tsv",
+        config["Rlibpath"]
+    params:
+        kraken2_genomes=config["kraken2_genomes"]
+    output:
+        "data/accession2genome_cleaned.tsv"
+    script:
+        "code/clean_accession2genome.R"
+
 rule evaluate_mappings:
     input:
         config["Rlibpath"],
         kraken="data/kraken2_classification/{sample}/{sample}.report",
         accession2length = "data/accession2length.tsv",
-        accessuib2genome = "data/accession2genome.tsv",
+        accession2genome = "data/accession2genome_cleaned.tsv",
         WD = config["WD"],
         dbfile = config["SQL_database"],
         map_done = "data/mapped_reads/{sample}/mapping_microbial_reads.done"
     params:
         sam_files = "data/mapped_reads/{sample}/"
     output:
-        svg="data/KrakenRefine/{sample}/KrakenRefine_{sample}.svg",
+        refined="data/KrakenRefine/{sample}/{sample}_refined.tsv",
         #pdf="data/KrakenRefine/{sample}/KrakenRefine_{sample}.pdf"
     threads:
         10
